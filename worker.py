@@ -7,7 +7,7 @@ QUEUE_NAME = "orders"
 PROCESSED_FILE = "processed_events.txt"
 
 worker_name = os.environ.get("WORKER_NAME", "Worker")
-
+print(f"[{worker_name}] Process ID: {os.getpid()}")
 
 def load_processed_events():
     if not os.path.exists(PROCESSED_FILE):
