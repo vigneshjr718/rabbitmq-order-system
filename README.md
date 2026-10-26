@@ -1,16 +1,20 @@
 # RabbitMQ Asynchronous Order Processing System
 
-A small asynchronous messaging system built with **Python** and **RabbitMQ**. The project demonstrates message publishing, competing consumers, manual acknowledgments, message redelivery after worker failure, and idempotent duplicate handling.
+A small asynchronous messaging system built using **Python** and **RabbitMQ**. This project demonstrates asynchronous message publishing, competing consumers, manual acknowledgments, failure and message redelivery, and idempotent duplicate handling.
 
 ---
 
 ## 1. Project Overview
 
-The system consists of an **Order Producer**, a **RabbitMQ queue**, and multiple **Order Workers**.
+The system consists of:
 
-The producer publishes order events to RabbitMQ. Two independent worker processes consume messages from the same queue and act as **competing consumers**.
+- **Order Producer** — publishes order messages.
+- **RabbitMQ** — stores and distributes messages through the `orders` queue.
+- **Order Worker** — consumes and processes order messages.
 
-The project also demonstrates RabbitMQ's behavior when a worker fails before acknowledging a message and shows how duplicate events can be handled safely using `event_id`.
+The producer and workers run as **independent processes**. Two worker processes connect to the same queue and act as competing consumers.
+
+The system also demonstrates what happens when a worker stops before acknowledging a message and how duplicate events can be safely handled using `event_id`.
 
 ---
 
@@ -18,7 +22,7 @@ The project also demonstrates RabbitMQ's behavior when a worker fails before ack
 
 ```mermaid
 flowchart LR
-    P["Order Producer"] -->|"Publish Order Event"| Q[("RabbitMQ<br/>orders Queue")]
+    P["Order Producer"] -->|"Publish Order Event"| Q[("RabbitMQ orders Queue")]
     Q -->|"Deliver Message"| W1["Order Worker 1"]
     Q -->|"Deliver Message"| W2["Order Worker 2"]
     W1 -->|"ACK after processing"| Q
@@ -30,7 +34,7 @@ flowchart LR
 ```text
 Order Producer
       |
-      | publishes order event
+      | publishes order
       v
 +-------------------+
 |     RabbitMQ      |
@@ -46,7 +50,7 @@ Order Producer
      ACK       ACK
 ```
 
-Both workers listen to the same queue. RabbitMQ distributes messages between the available workers so that a message is normally handled by only one worker.
+Both workers listen to the same queue. RabbitMQ distributes messages between available workers so that each message is normally handled by only one worker.
 
 ---
 
@@ -55,9 +59,10 @@ Both workers listen to the same queue. RabbitMQ distributes messages between the
 - Python 3
 - RabbitMQ
 - Docker
-- Pika Python RabbitMQ client
+- Pika
 - Visual Studio Code
-- Git / GitHub
+- Git
+- GitHub
 
 ---
 
@@ -74,11 +79,11 @@ rabbitmq-order-system/
 ├── README.md
 ├── .gitignore
 │
-└── screenshots/
-    ├── successful-processing.png
-    ├── competing-consumers.png
-    ├── failure-redelivery.png
-    └── duplicate-handling.png
+└── Screenshots/
+    ├── completing-consumer.jpeg
+    ├── duplicate-handling.jpeg
+    ├── failure-worker1.jpeg
+    └── failure-worker2.jpeg
 ```
 
 ### File Description
@@ -87,16 +92,16 @@ rabbitmq-order-system/
 |---|---|
 | `producer.py` | Publishes multiple order messages to RabbitMQ |
 | `worker.py` | Consumes and processes order messages and sends manual ACKs |
-| `failure_producer.py` | Publishes a single message for the failure/redelivery demonstration |
+| `failure_producer.py` | Publishes one message for the failure and redelivery demonstration |
 | `duplicate_producer.py` | Publishes the same `event_id` twice |
-| `requirements.txt` | Lists Python dependencies |
-| `screenshots/` | Contains execution evidence |
+| `requirements.txt` | Contains the Python dependency |
+| `Screenshots/` | Contains execution evidence |
 
 ---
 
 ## 5. Order Message Format
 
-Each order event contains the fields required by the assignment:
+Every order message contains:
 
 ```json
 {
@@ -107,14 +112,12 @@ Each order event contains the fields required by the assignment:
 }
 ```
 
-### Fields
-
 | Field | Description |
 |---|---|
 | `event_id` | Unique identifier for the event |
 | `order_id` | Identifier for the order |
 | `item_id` | Item being ordered |
-| `quantity` | Number of items requested |
+| `quantity` | Quantity requested |
 
 ---
 
@@ -122,7 +125,7 @@ Each order event contains the fields required by the assignment:
 
 ## 6. Prerequisites
 
-The following software is required:
+Install:
 
 - Python 3
 - Docker Desktop
@@ -131,9 +134,9 @@ The following software is required:
 
 ---
 
-## 7. Create and Activate Virtual Environment
+## 7. Create and Activate the Virtual Environment
 
-From the project directory:
+Create the environment:
 
 ```powershell
 py -m venv .venv
@@ -145,7 +148,7 @@ Activate it:
 .\.venv\Scripts\Activate.ps1
 ```
 
-The terminal should then display:
+The terminal should display:
 
 ```text
 (.venv) PS ...\rabbitmq-order-system>
@@ -155,7 +158,7 @@ The terminal should then display:
 
 ## 8. Install Dependencies
 
-Install the required Python package:
+Install the required package:
 
 ```powershell
 python -m pip install -r requirements.txt
@@ -167,13 +170,19 @@ The project uses:
 pika==1.4.4
 ```
 
+The installation can be verified using:
+
+```powershell
+python -m pip show pika
+```
+
 ---
 
 ## 9. Running RabbitMQ
 
-Start Docker Desktop first.
+Start **Docker Desktop** first.
 
-Create the RabbitMQ container:
+For the initial RabbitMQ container creation:
 
 ```powershell
 docker run -d --name rabbitmq-lab -p 5672:5672 -p 15672:15672 rabbitmq:3-management
@@ -185,7 +194,7 @@ If the container already exists:
 docker start rabbitmq-lab
 ```
 
-Verify that RabbitMQ is running:
+Verify that it is running:
 
 ```powershell
 docker ps
@@ -206,7 +215,7 @@ Username: guest
 Password: guest
 ```
 
-The Python applications connect to RabbitMQ using port `5672`, while the management interface uses port `15672`.
+Port `5672` is used by the Python applications. Port `15672` provides the RabbitMQ Management interface.
 
 ---
 
@@ -214,7 +223,7 @@ The Python applications connect to RabbitMQ using port `5672`, while the managem
 
 ## 10. Start Worker 1
 
-Open the first VS Code terminal:
+Open the first VS Code PowerShell terminal:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
@@ -232,7 +241,7 @@ Expected startup output:
 
 ## 11. Start Worker 2
 
-Open a second VS Code terminal:
+Open a second terminal:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
@@ -252,7 +261,7 @@ Worker 1 and Worker 2 are independent processes connected to the same RabbitMQ q
 
 ## 12. Run the Order Producer
 
-Open a third VS Code terminal:
+Open a third terminal:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
@@ -266,14 +275,13 @@ The producer publishes multiple order messages containing:
 - `item_id`
 - `quantity`
 
-Example producer output:
+Example:
 
 ```text
-[Producer] Published order_id=order-101 item_id=laptop quantity=1
-[Producer] Published order_id=order-102 item_id=keyboard quantity=2
-[Producer] Published order_id=order-103 item_id=mouse quantity=1
-[Producer] Published order_id=order-104 item_id=monitor quantity=2
-
+[Producer] Published order_id=order-101
+[Producer] Published order_id=order-102
+[Producer] Published order_id=order-103
+[Producer] Published order_id=order-104
 [Producer] Finished publishing orders.
 ```
 
@@ -283,151 +291,127 @@ Example producer output:
 
 ## 13. Successful Message Processing
 
-When a worker receives an order, it logs the order information and begins processing.
+When a worker receives an order, it logs the order and begins processing.
 
-After processing finishes, the worker explicitly sends an ACK to RabbitMQ.
-
-Example:
-
-```text
-[Worker-1] Received order_id=order-101 item_id=laptop quantity=1
-[Worker-1] Processing order...
-[Worker-1] Processing complete.
-[Worker-1] ACK sent.
-```
-
-The worker uses manual acknowledgment:
+The worker uses:
 
 ```python
 auto_ack=False
 ```
 
-and acknowledges the message only after processing:
+Therefore, RabbitMQ does not automatically acknowledge the message.
+
+After processing completes, the worker explicitly sends:
 
 ```python
 ch.basic_ack(delivery_tag=method.delivery_tag)
 ```
 
-### Evidence
-
-Screenshot will be added after execution:
+Example:
 
 ```text
-screenshots/successful-processing.png
+[Worker-1] Received order_id=order-101
+[Worker-1] Processing order...
+[Worker-1] Processing complete.
+[Worker-1] ACK sent.
 ```
+
+### Evidence — Successful Processing
+
+The following execution evidence shows orders being received, processed, and acknowledged.
+
+![Successful Message Processing](Screenshots/completing-consumer.jpeg)
 
 ---
 
 ## 14. Competing Consumers
 
-Two worker processes are connected to the same `orders` queue.
+Two independent worker processes are connected to the same `orders` queue.
 
-RabbitMQ distributes messages between Worker 1 and Worker 2. Each individual message is delivered to one available consumer.
-
-Example:
-
-### Worker 1
-
-```text
-[Worker-1] Received order_id=order-101
-[Worker-1] Processing order...
-[Worker-1] ACK sent.
-
-[Worker-1] Received order_id=order-103
-[Worker-1] Processing order...
-[Worker-1] ACK sent.
-```
-
-### Worker 2
-
-```text
-[Worker-2] Received order_id=order-102
-[Worker-2] Processing order...
-[Worker-2] ACK sent.
-
-[Worker-2] Received order_id=order-104
-[Worker-2] Processing order...
-[Worker-2] ACK sent.
-```
-
-This demonstrates the **Competing Consumers** messaging pattern.
-
-### Evidence
-
-Screenshot will be added after execution:
-
-```text
-screenshots/competing-consumers.png
-```
-
----
-
-## 15. Failure and Message Redelivery
-
-RabbitMQ uses acknowledgments to determine whether a message was successfully processed.
-
-For this demonstration:
-
-1. Worker 1 receives a message.
-2. Worker 1 begins processing.
-3. Worker 1 is stopped before sending the ACK.
-4. The message remains unacknowledged.
-5. RabbitMQ makes the message available again.
-6. Worker 2 receives and processes the same message.
-7. Worker 2 sends the ACK.
-
-A single test message can be published using:
-
-```powershell
-python failure_producer.py
-```
-
-The same `event_id` should appear first in Worker 1 and then in Worker 2.
+RabbitMQ distributes messages between Worker 1 and Worker 2. Each individual message is handled by only one available worker.
 
 Example:
 
 ```text
 Worker 1:
-
-Received event_id=abc-123
-Processing order...
-<Worker 1 stops before ACK>
+order-103 → Processing → ACK
 
 Worker 2:
-
-Received event_id=abc-123
-Processing order...
-Processing complete.
-ACK sent.
+order-102 → Processing → ACK
+order-104 → Processing → ACK
 ```
 
-This demonstrates RabbitMQ's **at-least-once delivery behavior**.
+This demonstrates the **Competing Consumers** pattern.
 
-### Evidence
+### Evidence — Competing Consumers
 
-Screenshot will be added after execution:
+The screenshot below shows Worker 1 and Worker 2 running simultaneously and receiving different messages from the same RabbitMQ queue.
 
-```text
-screenshots/failure-redelivery.png
+![Competing Consumers](Screenshots/completing-consumer.jpeg)
+
+---
+
+## 15. Failure and Message Redelivery
+
+RabbitMQ uses acknowledgments to determine whether a message has been successfully processed.
+
+The failure test follows this sequence:
+
+1. Worker 1 receives a message.
+2. Worker 1 starts processing.
+3. Worker 1 stops before sending the ACK.
+4. RabbitMQ detects that the message was not acknowledged.
+5. The message becomes available for redelivery.
+6. Worker 2 receives the same message.
+7. Worker 2 finishes processing.
+8. Worker 2 sends the ACK.
+9. RabbitMQ and the remaining worker continue running.
+
+The test message is published using:
+
+```powershell
+python failure_producer.py
 ```
+
+The same `event_id` appearing in both worker outputs demonstrates that the original message was redelivered rather than a new message being created.
+
+### Evidence — Worker 1 Stops Before ACK
+
+Worker 1 receives `failure-test-001` and begins processing the message. It stops before completing processing and sending an ACK.
+
+![Worker 1 Failure Before ACK](Screenshots/failure-worker1.jpeg)
+
+### Evidence — Worker 2 Receives the Redelivered Message
+
+Worker 2 receives the same `failure-test-001` event, completes processing, and sends an ACK.
+
+![Worker 2 Redelivery and ACK](Screenshots/failure-worker2.jpeg)
+
+This demonstrates RabbitMQ's redelivery behavior when a consumer fails before acknowledging a message.
 
 ---
 
 ## 16. Duplicate Handling
 
-Consumers keep track of processed `event_id` values.
+Processed `event_id` values are stored in:
 
-The duplicate test publishes the same event twice:
+```text
+processed_events.txt
+```
+
+The duplicate test is executed using:
 
 ```powershell
 python duplicate_producer.py
 ```
 
-Example:
+The producer deliberately publishes the same event twice:
 
 ```text
 event_id=duplicate-test-001
 ```
+
+### First Delivery
 
 The first delivery is processed normally:
 
@@ -438,39 +422,43 @@ The first delivery is processed normally:
 [Worker-1] ACK sent.
 ```
 
-When the same `event_id` is received again, the worker detects the duplicate:
+### Second Delivery
+
+When the same `event_id` arrives again:
 
 ```text
-[Worker-2] DUPLICATE detected: event_id=duplicate-test-001
-[Worker-2] Business action skipped.
-[Worker-2] Duplicate acknowledged.
+[Worker-1] DUPLICATE detected: event_id=duplicate-test-001
+[Worker-1] Business action skipped.
+[Worker-1] Duplicate acknowledged.
 ```
 
-The duplicate message is acknowledged so RabbitMQ does not continue redelivering it, but the business action is **not executed again**.
+The duplicate message is acknowledged, but the business operation is **not performed again**.
 
-### Evidence
+### Evidence — Duplicate Handling
 
-Screenshot will be added after execution:
+The following screenshot shows the first event being processed normally and the second copy being detected as a duplicate.
 
-```text
-screenshots/duplicate-handling.png
-```
+![Duplicate Event Handling](Screenshots/duplicate-handling.jpeg)
 
 ---
 
-# Reliability Concepts Demonstrated
+# Reliability Features
 
 ## 17. Manual Acknowledgments
 
-The consumer uses:
+The worker uses:
 
 ```python
 auto_ack=False
 ```
 
-This prevents RabbitMQ from considering the message successfully handled immediately after delivery.
+The ACK is sent only after processing has completed:
 
-The ACK is sent only after processing completes.
+```python
+ch.basic_ack(delivery_tag=method.delivery_tag)
+```
+
+This allows RabbitMQ to redeliver an unacknowledged message if a worker fails.
 
 ---
 
@@ -482,7 +470,7 @@ The workers use:
 channel.basic_qos(prefetch_count=1)
 ```
 
-This prevents RabbitMQ from giving a worker multiple unacknowledged messages at once and helps distribute work between available consumers.
+This limits each worker to one unacknowledged message at a time and helps distribute messages between the two competing consumers.
 
 ---
 
@@ -497,7 +485,7 @@ channel.queue_declare(
 )
 ```
 
-Messages are published using:
+Messages are published with:
 
 ```python
 delivery_mode=2
@@ -509,7 +497,7 @@ This marks the messages as persistent.
 
 ## 20. Idempotent Message Handling
 
-Each event contains a unique `event_id`.
+Every message contains an `event_id`.
 
 Processed event IDs are recorded in:
 
@@ -517,37 +505,41 @@ Processed event IDs are recorded in:
 processed_events.txt
 ```
 
-Before executing the business action, the worker checks whether the event was already processed.
+Before executing the business action, the worker checks whether the `event_id` was previously processed.
 
-This prevents duplicate deliveries from causing the business operation to execute multiple times.
+If the event has already been processed:
+
+```text
+DUPLICATE detected
+Business action skipped.
+```
+
+This prevents duplicate deliveries from causing the same business operation to execute more than once.
 
 ---
 
 # Evidence Summary
 
-## 21. Screenshots
-
-After completing all demonstrations, the following evidence will be included:
+## 21. Execution Evidence
 
 | Requirement | Evidence |
 |---|---|
-| Successful processing and ACK | `screenshots/successful-processing.png` |
-| Two competing consumers | `screenshots/competing-consumers.png` |
-| Worker failure and message redelivery | `screenshots/failure-redelivery.png` |
-| Duplicate event handling | `screenshots/duplicate-handling.png` |
-
-The screenshots will be embedded here after the tests are completed.
+| Successful message processing and ACK | [View Evidence](Screenshots/completing-consumer.jpeg) |
+| Two competing consumers | [View Evidence](Screenshots/completing-consumer.jpeg) |
+| Worker 1 receives message but stops before ACK | [View Evidence](Screenshots/failure-worker1.jpeg) |
+| Worker 2 receives the redelivered message and ACKs it | [View Evidence](Screenshots/failure-worker2.jpeg) |
+| Duplicate event detection and skipped business action | [View Evidence](Screenshots/duplicate-handling.jpeg) |
 
 ---
 
 # Reflection
 
-## 22. Why Can a Message Be Delivered More Than Once?
+## 22. Why Can a Message Be Delivered More Than Once, and How Does Idempotent Handling Help?
 
-A RabbitMQ message can be delivered more than once when a consumer receives a message but fails before sending an acknowledgment. RabbitMQ cannot determine whether the business operation completed successfully, so the unacknowledged message can be delivered to another consumer. Idempotent handling prevents the same business action from being performed multiple times by keeping track of previously processed `event_id` values. This allows the application to safely handle both message redelivery and duplicate messages.
+A RabbitMQ message can be delivered more than once when a consumer receives the message but fails before sending an acknowledgment. RabbitMQ cannot determine whether the business operation completed successfully, so an unacknowledged message can be delivered to another consumer. Idempotent handling prevents the same business action from being performed multiple times by keeping track of previously processed `event_id` values. This allows the application to safely handle message redelivery and duplicate messages.
 
 ---
 
-## Conclusion
+# Conclusion
 
-This project demonstrates a basic asynchronous messaging architecture using RabbitMQ. The producer and workers run as independent processes, while RabbitMQ distributes messages between competing consumers. Manual acknowledgments provide reliable redelivery when a consumer fails, and `event_id` tracking provides idempotent handling of duplicate messages.
+This project demonstrates asynchronous messaging using RabbitMQ and Python. The producer and workers run as independent processes, and RabbitMQ distributes messages between two competing consumers. Manual acknowledgments allow unacknowledged messages to be redelivered after a worker failure, while `event_id` tracking provides idempotent handling and prevents duplicate business actions.
